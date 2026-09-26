@@ -1,5 +1,7 @@
 # معماری
 
+[← README](../README.md) · [راهنمای مدیر](ADMIN_GUIDE.md) · [افزودن اپیزود](ADD_EPISODE.md) · [نصب و اجرا](INSTALL.md) · [امنیت](SECURITY.md) · [وب‌هوک فروش](API_WEBHOOKS.md) · [تست‌ها](TEST_REPORT.md)
+
 ## لایه‌ها
 ```
 Telegram (PTB v21) → bot/handlers.py (کاربر) + bot/admin_handlers.py (مدیر) → modules/* → Database (sqlite3)

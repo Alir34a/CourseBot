@@ -1,5 +1,7 @@
 # خرید و رویدادها (بدون وب‌سرور)
 
+[← README](../README.md) · [راهنمای مدیر](ADMIN_GUIDE.md) · [افزودن اپیزود](ADD_EPISODE.md) · [معماری](ARCHITECTURE.md) · [نصب و اجرا](INSTALL.md) · [امنیت](SECURITY.md) · [تست‌ها](TEST_REPORT.md)
+
 ## مسیر خرید (تأیید دستی مدیر)
 1. کاربر واجد شرایط پیشنهاد را می‌بیند (`purchase_offer_viewed`) و روی لینک می‌زند (`clicked`).
 2. بعد از پرداخت، «✅ پرداخت کردم» → درخواست `pending` + ایونت `purchase_started` + پیام فوری به مدیر.

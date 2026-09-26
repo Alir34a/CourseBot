@@ -1,4 +1,7 @@
 # گزارش تست‌ها — 95 passed ✅
+
+[← README](../README.md) · [راهنمای مدیر](ADMIN_GUIDE.md) · [افزودن اپیزود](ADD_EPISODE.md) · [معماری](ARCHITECTURE.md) · [نصب و اجرا](INSTALL.md) · [امنیت](SECURITY.md) · [وب‌هوک فروش](API_WEBHOOKS.md)
+
 اجراشده با: `python -m pytest tests/ -q -p no:asyncio`
 
 ## tests/test_copy_edit.py (۱۰ تست) — ویرایش متن از داخل صفحه
