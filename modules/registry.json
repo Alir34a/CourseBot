@@ -1,0 +1,566 @@
+{
+  "version": 4,
+
+ "library": "internal telegram-bot modules",
+ "rule": "Before building a new bot: read this registry, reuse matching modules, avoid duplicates. New generic capability => new module + register here.",
+ "modules": [
+  {
+   "name": "config",
+   "path": "modules/config",
+   "purpose": "Env-based configuration, no hard-coded secrets; validates owner/admin settings at startup.",
+   "interface": [
+    "load_config(env=None)->Config",
+    "is_owner_configured(cfg)->dict",
+    "require_config(cfg)"
+   ],
+   "provides": [
+    "load_config(env=None)->Config",
+    "is_owner_configured(cfg)->dict",
+    "require_config(cfg)"
+   ],
+   "dependencies": [],
+   "standalone": true,
+   "reusable": true,
+   "configuration": "BOT_TOKEN, ADMIN_IDS, ADMIN_USERNAMES, OWNER_EMAIL, DATABASE_PATH, DATABASE_URL, COURSE_SLUG, COURSE_TITLE, EPISODE_COUNT, OFFER_TRIGGER, OFFER_URL, SALES_WEBHOOK_SECRET, ADMIN_*",
+   "settings": "BOT_TOKEN, ADMIN_IDS, ADMIN_USERNAMES, OWNER_EMAIL, DATABASE_PATH, DATABASE_URL, COURSE_SLUG, COURSE_TITLE, EPISODE_COUNT, OFFER_TRIGGER, OFFER_URL, SALES_WEBHOOK_SECRET, ADMIN_*",
+   "documentation": "../modules/config.md",
+   "usage_in_new_bot": "from modules.config import load_config; cfg = load_config()"
+  },
+  {
+   "name": "database",
+   "path": "modules/database",
+   "purpose": "Thin sqlite3 layer: connect, idempotent migrate of database/schema.sql, parameterized helpers (SQL-injection safe).",
+   "interface": [
+    "Database(path)",
+    "db.migrate()",
+    "db.execute/fetchone/fetchall()",
+    "get_db(path)",
+    "now_iso()"
+   ],
+   "provides": [
+    "Database(path)",
+    "db.migrate()",
+    "db.execute/fetchone/fetchall()",
+    "get_db(path)",
+    "now_iso()"
+   ],
+   "dependencies": [
+    "config",
+    "logging_mod"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "DATABASE_PATH",
+   "settings": "DATABASE_PATH",
+   "documentation": "../modules/database.md",
+   "usage_in_new_bot": "from modules.database import Database; db = Database(cfg.database_path); db.migrate()"
+  },
+  {
+   "name": "logging_mod",
+   "path": "modules/logging_mod",
+   "purpose": "Safe logging: redacts tokens/phones/secrets; user-friendly error to user + technical detail to log.",
+   "interface": [
+    "get_logger(name, level)",
+    "redact(text)",
+    "user_error(public_msg, log, exc)"
+   ],
+   "provides": [
+    "get_logger(name, level)",
+    "redact(text)",
+    "user_error(public_msg, log, exc)"
+   ],
+   "dependencies": [],
+   "standalone": true,
+   "reusable": true,
+   "configuration": "LOG_LEVEL",
+   "settings": "LOG_LEVEL",
+   "documentation": "../modules/logging_mod.md",
+   "usage_in_new_bot": "from modules.logging_mod import get_logger"
+  },
+  {
+   "name": "telegram_core",
+   "path": "modules/telegram_core",
+   "purpose": "PTB bootstrap: Application builder, admin guard decorator, callback allowlist validation, fault-tolerant in-place message edits.",
+   "interface": [
+    "build_app(token, post_init=None)",
+    "is_admin(id, admin_ids)",
+    "admin_only(admin_ids)",
+    "validate_callback(data)",
+    "parse_callback(data)",
+    "safe_edit(query, text, reply_markup=None)->status",
+    "safe_edit_markup(query, reply_markup=None)->bool"
+   ],
+   "provides": [
+    "build_app(token)",
+    "is_admin(id, admin_ids)",
+    "admin_only(admin_ids)",
+    "validate_callback(data)",
+    "parse_callback(data)",
+    "safe_edit(query, text, reply_markup=None)->status",
+    "safe_edit_markup(query, reply_markup=None)->bool"
+   ],
+   "dependencies": [
+    "config",
+    "logging_mod"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "BOT_TOKEN, ADMIN_IDS",
+   "settings": "BOT_TOKEN, ADMIN_IDS",
+   "documentation": "../modules/telegram_core.md",
+   "usage_in_new_bot": "from modules.telegram_core import build_app, validate_callback, safe_edit"
+  },
+  {
+   "name": "screens",
+   "path": "modules/screens",
+   "purpose": "One mutable menu message per chat: in-place nav, stale-screen cleanup, so browsing costs zero new messages.",
+   "interface": [
+    "render(update, ctx, text, reply_markup=None)->status",
+    "screen(ctx)",
+    "screen_id(ctx)",
+    "is_screen(ctx, message_id)",
+    "set_screen(ctx, chat_id, message_id)",
+    "clear_screen(ctx)",
+    "drop_screen(ctx, bot)->bool"
+   ],
+   "provides": [
+    "render(update, ctx, text, reply_markup=None)->status",
+    "screen(ctx)",
+    "screen_id(ctx)",
+    "is_screen(ctx, message_id)",
+    "set_screen(ctx, chat_id, message_id)",
+    "clear_screen(ctx)",
+    "drop_screen(ctx, bot)->bool"
+   ],
+   "dependencies": [
+    "telegram_core",
+    "logging_mod"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "-",
+   "settings": "-",
+   "documentation": "../modules/screens.md",
+   "usage_in_new_bot": "from modules.screens import render; await render(update, ctx, text, kb)"
+  },
+  {
+   "name": "buttons",
+   "path": "modules/buttons",
+   "purpose": "Language-neutral keyboard builders (all labels are parameters) + text progress-bar renderer.",
+   "interface": [
+    "phone_request_kb(label)",
+    "episode_list_kb(episodes, unlocked_upto, unit)",
+    "nav_kb(next_label, next_cb, back_cb, home_label)",
+    "back_only_kb(back_cb, home_label)",
+    "progress_bar(done, total)",
+    "split_text(text, limit=4000)->chunks"
+   ],
+   "provides": [
+    "phone_request_kb(label)",
+    "episode_list_kb(episodes, unlocked_upto, unit)",
+    "nav_kb(next_label, next_cb, back_cb, home_label)",
+    "back_only_kb(back_cb, home_label)",
+    "progress_bar(done, total)",
+    "split_text(text, limit=4000)->chunks"
+   ],
+   "dependencies": [],
+   "standalone": true,
+   "reusable": true,
+   "configuration": "— (labels passed by caller)",
+   "settings": "— (labels passed by caller)",
+   "documentation": "../modules/buttons.md",
+   "usage_in_new_bot": "from modules.buttons import progress_bar, episode_list_kb"
+  },
+  {
+   "name": "users",
+   "path": "modules/users",
+   "purpose": "User lifecycle: upsert on /start, phone/name setters, last-activity touch, search, stage filters.",
+   "interface": [
+    "get_or_create(db, telegram_id, username)",
+    "set_phone()",
+    "set_name()",
+    "touch()",
+    "search(q)",
+    "filter_by_stage(stage, days, course_slug=None)",
+    "get_by_telegram()",
+    "get_by_id()"
+   ],
+   "provides": [
+    "get_or_create(db, telegram_id, username)",
+    "set_phone()",
+    "set_name()",
+    "touch()",
+    "search(q)",
+    "filter_by_stage(stage, days, course_slug=None)",
+    "get_by_telegram()",
+    "get_by_id()"
+   ],
+   "dependencies": [
+    "database",
+    "events"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "—",
+   "settings": "—",
+   "documentation": "../modules/users.md",
+   "usage_in_new_bot": "from modules.users import get_or_create"
+  },
+  {
+   "name": "phone_verification",
+   "path": "modules/phone_verification",
+   "purpose": "Contact-only phone registration (typed numbers rejected); IR mobile normalize+validate; anti-spoof check.",
+   "interface": [
+    "is_contact_message(msg)",
+    "normalize_ir_mobile(raw)->str|None",
+    "validate_and_save(db, uid, phone, contact_uid, sender_id)"
+   ],
+   "provides": [
+    "is_contact_message(msg)",
+    "normalize_ir_mobile(raw)->str|None",
+    "validate_and_save(db, uid, phone, contact_uid, sender_id)"
+   ],
+   "dependencies": [
+    "users",
+    "events"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "—",
+   "settings": "—",
+   "documentation": "../modules/phone_verification.md",
+   "usage_in_new_bot": "from modules.phone_verification import validate_and_save"
+  },
+  {
+   "name": "course_engine",
+   "path": "modules/course_engine",
+   "purpose": "Generic course/episode/part CMS: N episodes x M parts, ordering, active flags, JSON seeding. No per-episode branches.",
+   "interface": [
+    "ensure_course()",
+    "get_course()",
+    "list_episodes(slug)",
+    "get_episode(slug, no)",
+    "list_parts(ep_id)",
+    "get_part(ep_id, no)",
+    "upsert_episode()",
+    "upsert_part()",
+    "seed_from_json()",
+    "list_courses()",
+    "create_course(slug,title,desc)",
+    "set_course_active()",
+    "delete_course()->counts (cascade)",
+    "delete_episode()",
+    "delete_part()",
+    "course_stats()",
+    "get_course_by_id()",
+    "auto_slug()",
+    "next_episode_no()",
+    "next_part_no()",
+    "set_episode_media()",
+    "update_part_content()"
+   ],
+   "provides": [
+    "ensure_course()",
+    "get_course()",
+    "list_episodes(slug)",
+    "get_episode(slug, no)",
+    "list_parts(ep_id)",
+    "get_part(ep_id, no)",
+    "upsert_episode()",
+    "upsert_part()",
+    "seed_from_json()",
+    "list_courses()",
+    "create_course(slug,title,desc)",
+    "set_course_active()",
+    "delete_course()->counts (cascade)",
+    "delete_episode()",
+    "delete_part()",
+    "course_stats()",
+    "get_course_by_id()",
+    "auto_slug()",
+    "next_episode_no()",
+    "next_part_no()",
+    "set_episode_media()",
+    "update_part_content()"
+   ],
+   "dependencies": [
+    "database"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "COURSE_SLUG",
+   "settings": "COURSE_SLUG",
+   "documentation": "../modules/course_engine.md",
+   "usage_in_new_bot": "from modules.course_engine import seed_from_json"
+  },
+  {
+   "name": "progress",
+   "path": "modules/progress",
+   "purpose": "Server-side gating + history. Open-counts-as-seen: delivery completes parts/episodes idempotently (re-views don't duplicate events).",
+   "interface": [
+    "unlocked_episode_no()",
+    "can_access_episode()",
+    "can_access_part()",
+    "start_episode()",
+    "start_part()",
+    "complete_part()->dict",
+    "progress_summary()->dict",
+    "completed_episode_nos()",
+    "completed_part_nos()",
+    "complete_episode() (open-counts-as-seen, idempotent)"
+   ],
+   "provides": [
+    "unlocked_episode_no()",
+    "can_access_episode()",
+    "can_access_part()",
+    "start_episode()",
+    "start_part()",
+    "complete_part()->dict",
+    "progress_summary()->dict",
+    "completed_episode_nos()",
+    "completed_part_nos()",
+    "complete_episode() (open-counts-as-seen, idempotent)"
+   ],
+   "dependencies": [
+    "database",
+    "course_engine",
+    "events"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "—",
+   "settings": "—",
+   "documentation": "../modules/progress.md",
+   "usage_in_new_bot": "from modules.progress import can_access_episode, complete_part"
+  },
+  {
+   "name": "events",
+   "path": "modules/events",
+   "purpose": "Append-only generic event tracking. track() is resilient (never breaks user flow, returns 0 on failure); track_strict() raises.",
+   "interface": [
+    "track(db, user_id, type, payload)->int (resilient)",
+    "track_strict()->int",
+    "user_timeline()",
+    "count_by_type()",
+    "EventTypes.* (+PURCHASE_DECLINED)"
+   ],
+   "provides": [
+    "track(db, user_id, type, payload)->int (resilient)",
+    "track_strict()->int",
+    "user_timeline()",
+    "count_by_type()",
+    "EventTypes.* (+PURCHASE_DECLINED)"
+   ],
+   "dependencies": [
+    "database",
+    "logging_mod"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "—",
+   "settings": "—",
+   "documentation": "../modules/events.md",
+   "usage_in_new_bot": "from modules.events import track, EventTypes"
+  },
+  {
+   "name": "analytics",
+   "path": "modules/analytics",
+   "purpose": "Real computed reports over events+progress. Denominators: completion=ep1 starters; churn/per-ep starters; CTR=clicked/viewed; purchase=buys/viewed. All div-by-zero guarded; UTC ISO timestamps.",
+   "interface": [
+    "funnel_by_episode()",
+    "completion_rate()",
+    "offer_conversion()",
+    "avg_time_to_purchase()",
+    "dashboard_stats()"
+   ],
+   "provides": [
+    "funnel_by_episode()",
+    "completion_rate()",
+    "offer_conversion()",
+    "avg_time_to_purchase()",
+    "dashboard_stats()"
+   ],
+   "dependencies": [
+    "database",
+    "events",
+    "progress"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "—",
+   "settings": "—",
+   "documentation": "../modules/analytics.md",
+   "usage_in_new_bot": "from modules.analytics import dashboard_stats"
+  },
+  {
+   "name": "offers",
+   "path": "modules/offers",
+   "purpose": "Configurable purchase offer: CRUD, trigger rules (episode:N|always), viewed/clicked/started/completed logging, secret-guarded external sales webhook path.",
+   "interface": [
+    "get_active_offer(db, course_id=None)",
+    "should_show_offer()",
+    "log_interaction()",
+    "record_purchase(secret-guarded)",
+    "request_purchase()->pending (deduped)",
+    "pending_purchases()",
+    "purchase_history()",
+    "approve_purchase()",
+    "decline_purchase()",
+    "upsert_offer(..., course_id=None)",
+    "list_offers(course_id)",
+    "delete_offer()"
+   ],
+   "provides": [
+    "get_active_offer(db, course_id=None)",
+    "should_show_offer()",
+    "log_interaction()",
+    "record_purchase(secret-guarded)",
+    "request_purchase()->pending (deduped)",
+    "pending_purchases()",
+    "purchase_history()",
+    "approve_purchase()",
+    "decline_purchase()",
+    "upsert_offer(..., course_id=None)",
+    "list_offers(course_id)",
+    "delete_offer()"
+   ],
+   "dependencies": [
+    "database",
+    "events"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "OFFER_TRIGGER, OFFER_URL, SALES_WEBHOOK_SECRET",
+   "settings": "OFFER_TRIGGER, OFFER_URL, SALES_WEBHOOK_SECRET",
+   "documentation": "../modules/offers.md",
+   "usage_in_new_bot": "from modules.offers import should_show_offer"
+  },
+  {
+   "name": "messaging",
+   "path": "modules/messaging",
+   "purpose": "Outbox messaging: queue now, deliver via bot loop; single|filtered|broadcast audiences.",
+   "interface": [
+    "queue_message(text, scope, target_user_id, filter_json)",
+    "send_queued(db, bot)",
+    "audience_ids(filter)"
+   ],
+   "provides": [
+    "queue_message(text, scope, target_user_id, filter_json)",
+    "send_queued(db, bot)",
+    "audience_ids(filter)"
+   ],
+   "dependencies": [
+    "database",
+    "telegram_core",
+    "users"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "—",
+   "settings": "—",
+   "documentation": "../modules/messaging.md",
+   "usage_in_new_bot": "from modules.messaging import queue_message"
+  },
+  {
+   "name": "notifications",
+   "path": "modules/notifications",
+   "purpose": "Inactive-user reminder policies over messaging+users filters; message template injected per bot.",
+   "interface": [
+    "inactive_users(db, days)",
+    "reminder_text(name, ep_no, template)",
+    "queue_reminders(db, days, template)"
+   ],
+   "provides": [
+    "inactive_users(db, days)",
+    "reminder_text(name, ep_no, template)",
+    "queue_reminders(db, days, template)"
+   ],
+   "dependencies": [
+    "messaging",
+    "users"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "— (template passed by caller)",
+   "settings": "— (template passed by caller)",
+   "documentation": "../modules/notifications.md",
+   "usage_in_new_bot": "from modules.notifications import queue_reminders"
+  },
+  {
+   "name": "admin",
+   "path": "modules/admin",
+   "purpose": "Admin service: dashboard aggregates + per-user detail (with course info) for the Telegram console. Auth is Telegram ADMIN_IDS; no passwords.",
+   "interface": [
+    "dashboard(db, course_slug)",
+    "user_detail(db, user_id)->dict"
+   ],
+   "provides": [
+    "dashboard(db, course_slug)",
+    "user_detail(db, user_id)->dict"
+   ],
+   "dependencies": [
+    "database",
+    "analytics",
+    "users",
+    "course_engine",
+    "offers"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "ADMIN_IDS",
+   "settings": "ADMIN_IDS",
+   "documentation": "../modules/admin.md",
+   "usage_in_new_bot": "from modules.admin import verify_admin"
+  },
+  {
+   "name": "backup",
+   "path": "modules/backup",
+   "purpose": "Offline sqlite backup/restore via online-backup API; restore requires stopped bot (safety gate). CLI: python -m modules.backup.",
+   "interface": [
+    "backup(db_path, dest_dir)->path",
+    "list_backups(db_path)",
+    "restore_to(snapshot, db_path, require_stopped)"
+   ],
+   "provides": [
+    "backup(db_path, dest_dir)->path",
+    "list_backups(db_path)",
+    "restore_to(snapshot, db_path, require_stopped)"
+   ],
+   "dependencies": [
+    "config"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "DATABASE_PATH",
+   "settings": "DATABASE_PATH",
+   "documentation": "../modules/backup.md",
+   "usage_in_new_bot": "from modules.backup import backup"
+  },
+  {
+   "name": "settings",
+   "path": "modules/settings",
+   "purpose": "Generic key-value settings (settings table). Bot texts live under 'text:<key>'.",
+   "interface": [
+    "get(db,key,default)",
+    "set(db,key,value)",
+    "delete(db,key)",
+    "all(db)"
+   ],
+   "provides": [
+    "get(db,key,default)",
+    "set(db,key,value)",
+    "delete(db,key)",
+    "all(db)"
+   ],
+   "dependencies": [
+    "database"
+   ],
+   "standalone": false,
+   "reusable": true,
+   "configuration": "—",
+   "settings": "—",
+   "documentation": "../modules/settings.md",
+   "usage_in_new_bot": "from modules.settings import get, set"
+  }
+ ]
+}

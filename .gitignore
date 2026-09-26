@@ -1,0 +1,73 @@
+# --- secrets -------------------------------------------------------------
+# .env holds the real BOT_TOKEN, ADMIN_IDS and SALES_WEBHOOK_SECRET. The pattern
+# is .env* (not .env) so a copied .env.local or .env.production is caught too.
+# The template stays tracked - that is the point of it.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.secret
+id_rsa*
+secrets.*
+
+# --- runtime data: real users, real phone numbers -------------------------
+# data/ holds the sqlite database and its backups. modules/database creates the
+# directory on first run, so ignoring it wholesale costs nothing.
+data/
+# Belt and braces: a stray db anywhere else, plus the sqlite sidecars. The
+# -wal file holds *uncommitted* transactions, so it is the one most likely to
+# carry fresh user rows - and "*.db" does not match "*.db-wal".
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+*.bak
+
+# --- python ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.eggs/
+venv/
+.venv/
+env/
+ENV/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+
+# --- tests & coverage -----------------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+junit.xml
+.tox/
+
+# --- editors & OS ---------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- logs & scratch -------------------------------------------------------
+*.log
+*.tmp
+*.orig
+*.rej

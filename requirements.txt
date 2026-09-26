@@ -1,0 +1,7 @@
+# Core (no web framework: admin lives inside Telegram)
+python-telegram-bot[rate-limiter]==21.6
+python-dotenv==1.0.1
+# Tests
+pytest==8.3.4
+# No ORM on purpose: stdlib sqlite3 keeps modules dependency-free & portable.
+# For Postgres in production, psycopg[binary] can be added without changing module APIs.
